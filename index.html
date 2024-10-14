@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mario Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const mario = {
+            x: 50,
+            y: canvas.height - 150,
+            width: 50,
+            height: 50,
+            color: 'red',
+            velocityY: 0,
+            isJumping: false,
+            speed: 5
+        };
+
+        const ground = {
+            y: canvas.height - 100,
+            height: 100
+        };
+
+        const obstacles = [];
+        const coins = [];
+
+        let score = 0;
+        let isGameOver = false;
+
+        function createObstacle() {
+            obstacles.push({
+                x: canvas.width,
+                y: canvas.height - ground.height - 50,
+                width: 50,
+                height: 50,
+                color: 'green'
+            });
+        }
+
+        function createCoin() {
+            coins.push({
+                x: canvas.width,
+                y: Math.random() * (canvas.height - ground.height - 100),
+                width: 30,
+                height: 30,
+                color: 'gold'
+            });
+        }
+
+        function drawMario() {
+            ctx.fillStyle = mario.color;
+            ctx.fillRect(mario.x, mario.y, mario.width, mario.height);
+        }
+
+        function drawGround() {
+            ctx.fillStyle = 'sienna';
+            ctx.fillRect(0, ground.y, canvas.width, ground.height);
+        }
+
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                ctx.fillStyle = obstacle.color;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            });
+        }
+
+        function drawCoins() {
+            coins.forEach(coin => {
+                ctx.fillStyle = coin.color;
+                ctx.beginPath();
+                ctx.arc(coin.x + coin.width / 2, coin.y + coin.height / 2, coin.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawScore() {
+            ctx.font = '24px Arial';
+            ctx.fillStyle = 'black';
+            ctx.fillText(`Score: ${score}`, 20, 40);
+        }
+
+        function updateGame() {
+            if (isGameOver) {
+                ctx.font = '48px Arial';
+                ctx.fillStyle = 'black';
+                ctx.fillText('Game Over!', canvas.width / 2 - 150, canvas.height / 2);
+                ctx.font = '24px Arial';
+                ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 70, canvas.height / 2 + 40);
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Move and remove off-screen obstacles
+            obstacles.forEach((obstacle, index) => {
+                obstacle.x -= 5;
+                if (obstacle.x + obstacle.width < 0) {
+                    obstacles.splice(index, 1);
+                }
+            });
+
+            // Move and remove off-screen coins
+            coins.forEach((coin, index) => {
+                coin.x -= 3;
+                if (coin.x + coin.width < 0) {
+                    coins.splice(index, 1);
+                }
+            });
+
+            // Randomly create new obstacles and coins
+            if (Math.random() < 0.02) createObstacle();
+            if (Math.random() < 0.03) createCoin();
+
+            // Apply gravity
+            if (mario.isJumping) {
+                mario.velocityY += 0.5;
+                mario.y += mario.velocityY;
+
+                if (mario.y + mario.height >= canvas.height - ground.height) {
+                    mario.y = canvas.height - ground.height - mario.height;
+                    mario.isJumping = false;
+                }
+            }
+
+            // Check for collisions with obstacles
+            obstacles.forEach(obstacle => {
+                if (
+                    mario.x < obstacle.x + obstacle.width &&
+                    mario.x + mario.width > obstacle.x &&
+                    mario.y < obstacle.y + obstacle.height &&
+                    mario.y + mario.height > obstacle.y
+                ) {
+                    isGameOver = true;
+                }
+            });
+
+            // Check for coin collection
+            coins.forEach((coin, index) => {
+                if (
+                    mario.x < coin.x + coin.width &&
+                    mario.x + mario.width > coin.x &&
+                    mario.y < coin.y + coin.height &&
+                    mario.y + mario.height > coin.y
+                ) {
+                    coins.splice(index, 1);
+                    score += 10;
+                }
+            });
+
+            drawGround();
+            drawObstacles();
+            drawCoins();
+            drawMario();
+            drawScore();
+
+            requestAnimationFrame(updateGame);
+        }
+
+        window.addEventListener('keydown', (event) => {
+            switch (event.code) {
+                case 'ArrowRight':
+                    mario.x += mario.speed;
+                    break;
+                case 'ArrowLeft':
+                    mario.x -= mario.speed;
+                    break;
+                case 'Space':
+                    if (!mario.isJumping) {
+                        mario.velocityY = -15;
+                        mario.isJumping = true;
+                    }
+                    break;
+            }
+        });
+
+        updateGame();
+    </script>
+</body>
+</html>
